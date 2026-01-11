@@ -2,13 +2,14 @@
 # Installe Python et les dépendances nécessaires pour les modèles ML
 
 [phases.setup]
-nixPkgs = ["nodejs-18_x", "python39Full", "gcc"]
+nixPkgs = ["nodejs-18_x", "python39", "python39Packages.pip", "curl", "gcc"]
 
 [phases.install]
 cmds = [
   "npm install",
-  "python3 -m pip install --upgrade pip",
-  "python3 -m pip install xgboost numpy pandas scikit-learn joblib",
+  "curl -sS https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py && python3 /tmp/get-pip.py --user || python3 -m ensurepip --upgrade --user || true",
+  "python3 -m pip install --user --upgrade pip",
+  "python3 -m pip install --user -r requirements.txt",
   "npx prisma generate"
 ]
 
