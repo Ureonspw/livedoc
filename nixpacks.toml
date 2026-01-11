@@ -2,7 +2,7 @@
 # Installe Python et les dépendances nécessaires pour les modèles ML
 
 [phases.setup]
-nixPkgs = ["nodejs-18_x", "python39", "gcc"]
+nixPkgs = ["nodejs-18_x", "python39Full", "gcc"]
 
 [phases.install]
 cmds = [
