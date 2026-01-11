@@ -1,0 +1,371 @@
+.authContainer {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 2em;
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+}
+
+.authBackground {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("../images/Rectangle\ 1.svg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.3;
+  z-index: 0;
+}
+
+.authCard {
+  background: #fff;
+  border-radius: 20px;
+  padding: 3em;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 10px 40px rgba(60, 79, 138, 0.15);
+  position: relative;
+  z-index: 1;
+}
+
+.authHeader {
+  text-align: center;
+  margin-bottom: 2.5em;
+}
+
+.logoLink {
+  text-decoration: none;
+}
+
+.authLogo {
+  font-family: var(--font-jaro), sans-serif;
+  font-size: 2.5em;
+  color: #3885b0;
+  margin-bottom: 1em;
+  font-weight: 600;
+  transition: transform 0.2s ease;
+}
+
+.logoLink:hover .authLogo {
+  transform: scale(1.05);
+}
+
+.authTitle {
+  font-family: var(--font-jaro), sans-serif;
+  font-size: 2em;
+  color: #3c4f8a;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+
+.authSubtitle {
+  font-family: var(--font-mclaren), sans-serif;
+  font-size: 1em;
+  color: #666;
+  line-height: 1.6;
+}
+
+.authForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5em;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1em;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.formLabel {
+  font-family: var(--font-mclaren), sans-serif;
+  font-size: 0.95em;
+  color: #3c4f8a;
+  font-weight: 500;
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 1em;
+  color: #3c4f8a;
+  font-size: 1.2em;
+  z-index: 1;
+}
+
+.formInput,
+.formSelect {
+  width: 100%;
+  padding: 1em 1em 1em 3em;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-family: var(--font-mclaren), sans-serif;
+  font-size: 1em;
+  color: #333;
+  transition: all 0.3s ease;
+  background: #fff;
+}
+
+.formInput:focus,
+.formSelect:focus {
+  outline: none;
+  border-color: #3c4f8a;
+  box-shadow: 0 0 0 3px rgba(60, 79, 138, 0.1);
+}
+
+.inputError {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.inputSuccess {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+}
+
+.formSelect {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%233c4f8a' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1em center;
+  padding-right: 3em;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 1em;
+  background: none;
+  border: none;
+  color: #3c4f8a;
+  cursor: pointer;
+  font-size: 1.2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3em;
+  transition: color 0.2s ease;
+  z-index: 1;
+}
+
+.passwordToggle:hover {
+  color: #3885b0;
+}
+
+.formOptions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5em;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-family: var(--font-mclaren), sans-serif;
+  font-size: 0.9em;
+  color: #666;
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 1.2em;
+  height: 1.2em;
+  cursor: pointer;
+  accent-color: #3c4f8a;
+}
+
+.forgotLink {
+  font-family: var(--font-mclaren), sans-serif;
+  font-size: 0.9em;
+  color: #3c4f8a;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.forgotLink:hover {
+  color: #3885b0;
+  text-decoration: underline;
+}
+
+.submitButton {
+  background: #3c4f8a;
+  color: #fff;
+  padding: 1em 2em;
+  border: none;
+  border-radius: 30px;
+  font-family: var(--font-mclaren), sans-serif;
+  font-size: 1em;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  transition: all 0.3s ease;
+  margin-top: 1em;
+}
+
+.submitButton:hover {
+  background: #2d3d6b;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(60, 79, 138, 0.3);
+}
+
+.submitButton:active {
+  transform: translateY(0);
+}
+
+.authFooter {
+  text-align: center;
+  margin-top: 2em;
+  padding-top: 2em;
+  border-top: 1px solid #e0e0e0;
+}
+
+.authFooter p {
+  font-family: var(--font-mclaren), sans-serif;
+  font-size: 0.95em;
+  color: #666;
+}
+
+.authLink {
+  color: #3c4f8a;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.authLink:hover {
+  color: #3885b0;
+  text-decoration: underline;
+}
+
+/* Password Section */
+.passwordSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5em;
+  margin-top: 0.5em;
+}
+
+.passwordWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.passwordStrength {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  margin-top: 0.5em;
+}
+
+.strengthBar {
+  width: 100%;
+  height: 4px;
+  background: #e0e0e0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.strengthFill {
+  height: 100%;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.strengthFill.weak {
+  background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+}
+
+.strengthFill.medium {
+  background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
+}
+
+.strengthFill.strong {
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+}
+
+.strengthText {
+  font-family: var(--font-mclaren), sans-serif;
+  font-size: 0.85em;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.passwordStrength.weak .strengthText {
+  color: #ef4444;
+}
+
+.passwordStrength.medium .strengthText {
+  color: #f59e0b;
+}
+
+.passwordStrength.strong .strengthText {
+  color: #10b981;
+}
+
+.passwordMatch {
+  margin-top: 0.5em;
+  font-family: var(--font-mclaren), sans-serif;
+  font-size: 0.85em;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.matchSuccess {
+  color: #10b981;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+}
+
+.matchError {
+  color: #ef4444;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .authCard {
+    padding: 2em 1.5em;
+  }
+
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+
+  .authTitle {
+    font-size: 1.5em;
+  }
+
+  .authLogo {
+    font-size: 2em;
+  }
+}
+

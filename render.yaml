@@ -1,0 +1,26 @@
+# Configuration Render pour déploiement automatique
+# Documentation: https://render.com/docs/yaml-spec
+
+services:
+  - type: web
+    name: livedoc
+    env: node
+    region: frankfurt  # Choisir la région la plus proche
+    plan: free  # Plan gratuit
+    buildCommand: |
+      npm install &&
+      npx prisma generate &&
+      npm run build &&
+      pip3 install --user xgboost numpy pandas scikit-learn joblib
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false  # À configurer manuellement dans le dashboard
+      - key: NEXTAUTH_URL
+        sync: false  # À configurer après déploiement
+      - key: NEXTAUTH_SECRET
+        sync: false  # À générer et configurer manuellement
+      - key: PYTHON_PATH
+        value: /usr/bin/python3

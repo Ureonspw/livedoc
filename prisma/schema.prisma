@@ -1,0 +1,482 @@
+// Schéma Prisma pour LIVEDOC - Système Médical IA
+// Base de données : PostgreSQL
+// Supporte : Diabète, Maladie Rénale, Cardiovasculaire, Tuberculose
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =========================================================
+// TABLE UTILISATEURS (Médecins, Infirmiers, Admins)
+// =========================================================
+model Utilisateur {
+  id_utilisateur Int      @id @default(autoincrement())
+  nom            String   @db.VarChar(100)
+  prenom         String   @db.VarChar(100)
+  email          String   @unique @db.VarChar(150)
+  mot_de_passe   String   @db.VarChar(255) // Hashé avec bcrypt
+  role           Role
+  date_creation  DateTime @default(now())
+  
+  // Relations
+  consultations   Consultation[]
+  validations     Validation[]
+  activityLogs    ActivityLog[]
+  prescriptions   PrescriptionExamen[]
+  resultatsExamen ResultatExamen[]
+  
+  @@map("utilisateur")
+}
+
+enum Role {
+  MEDECIN
+  INFIRMIER
+  ADMIN
+}
+
+// =========================================================
+// TABLE PATIENT
+// =========================================================
+model Patient {
+  id_patient     Int      @id @default(autoincrement())
+  nom            String   @db.VarChar(100)
+  prenom         String   @db.VarChar(100)
+  sexe           Sexe
+  date_naissance DateTime
+  telephone      String?  @db.VarChar(20)
+  adresse        String?  @db.Text
+  date_creation  DateTime @default(now())
+  
+  // Relations
+  salleAttente  SalleAttente[]
+  consultations Consultation[]
+  suivis        SuiviMedical[]
+  
+  @@map("patient")
+}
+
+enum Sexe {
+  HOMME
+  FEMME
+}
+
+// =========================================================
+// TABLE SALLE D'ATTENTE
+// =========================================================
+model SalleAttente {
+  id_salle_attente Int             @id @default(autoincrement())
+  id_patient       Int
+  date_arrivee     DateTime        @default(now())
+  statut           StatutAttente   @default(EN_ATTENTE)
+  priorite         PrioriteAttente @default(NORMAL)
+  
+  // Relations
+  patient Patient @relation(fields: [id_patient], references: [id_patient], onDelete: Cascade)
+  
+  @@index([statut])
+  @@index([date_arrivee])
+  @@index([priorite])
+  @@map("salle_attente")
+}
+
+enum StatutAttente {
+  EN_ATTENTE
+  EN_CONSULTATION
+  TERMINE
+}
+
+enum PrioriteAttente {
+  NORMAL
+  URGENT
+  CRITIQUE
+}
+
+// =========================================================
+// TABLE CONSULTATION
+// =========================================================
+model Consultation {
+  id_consultation   Int      @id @default(autoincrement())
+  id_patient        Int
+  id_medecin        Int
+  date_consultation DateTime @default(now())
+  motif             String?  @db.Text
+  observation       String?  @db.Text
+  
+  // Relations
+  patient       Patient              @relation(fields: [id_patient], references: [id_patient], onDelete: Cascade)
+  medecin       Utilisateur          @relation(fields: [id_medecin], references: [id_utilisateur])
+  visites       Visite[]
+  prescriptions PrescriptionExamen[]
+  
+  @@index([id_patient])
+  @@index([id_medecin])
+  @@map("consultation")
+}
+
+// =========================================================
+// TABLE VISITE (Lien entre consultation et IA)
+// =========================================================
+model Visite {
+  id_visite       Int      @id @default(autoincrement())
+  id_consultation Int
+  date_visite     DateTime @default(now())
+  
+  // Relations
+  consultation      Consultation        @relation(fields: [id_consultation], references: [id_consultation], onDelete: Cascade)
+  constantesVitales ConstantesVitales?
+  donneesCliniques  DonneesCliniquesIA?
+  predictions       PredictionIA[]
+  images            ImageRadiographie[]
+  resultatsExamen   ResultatExamen[]
+  
+  @@index([id_consultation])
+  @@map("visite")
+}
+
+// =========================================================
+// TABLE CONSTANTES VITALES
+// =========================================================
+model ConstantesVitales {
+  id_constante        Int      @id @default(autoincrement())
+  temperature         Decimal? @db.Decimal(4, 1)
+  frequence_cardiaque Int?
+  saturation_oxygene  Int?
+  poids               Decimal? @db.Decimal(5, 2)
+  taille              Decimal? @db.Decimal(5, 2)
+  id_visite           Int      @unique
+  
+  // Relations
+  visite Visite @relation(fields: [id_visite], references: [id_visite], onDelete: Cascade)
+  
+  @@map("constantes_vitales")
+}
+
+// =========================================================
+// TABLE DONNÉES CLINIQUES POUR IA (TOUS DATASETS)
+// =========================================================
+model DonneesCliniquesIA {
+  id_donnee_ia Int @id @default(autoincrement())
+  id_visite    Int @unique
+  
+  // =========================
+  // DONNÉES DIABÈTE
+  // =========================
+  nombre_grossesses         Int?
+  taux_glucose              Decimal? @db.Decimal(5, 2)
+  pression_arterielle       Decimal? @db.Decimal(5, 2)
+  epaisseur_pli_cutane      Decimal? @db.Decimal(5, 2)
+  taux_insuline             Decimal? @db.Decimal(5, 2)
+  imc                       Decimal? @db.Decimal(5, 2)
+  fonction_pedigree_diabete Decimal? @db.Decimal(5, 3)
+  age                       Int?
+  
+  // =========================
+  // DONNÉES MALADIE RÉNALE
+  // =========================
+  uree_sanguine           Decimal? @db.Decimal(5, 2) // bu
+  creatinine_serique      Decimal? @db.Decimal(5, 2) // sc
+  sodium                  Decimal? @db.Decimal(5, 2) // sod
+  potassium               Decimal? @db.Decimal(5, 2) // pot
+  hemoglobine             Decimal? @db.Decimal(5, 2) // hemo
+  volume_cellulaire_packe Decimal? @db.Decimal(5, 2) // pcv
+  globules_blancs         Decimal? @db.Decimal(10, 2) // wc
+  globules_rouges         Decimal? @db.Decimal(10, 2) // rc
+  gravite_specifique      Decimal? @db.Decimal(4, 3) // sg
+  albumine                Int? // al
+  sucre                   Decimal? @db.Decimal(4, 2) // su
+  globules_rouges_urine   String?  @db.VarChar(10) // rbc: normal/abnormal
+  pus_cells               String?  @db.VarChar(10) // pc: normal/abnormal
+  pus_cells_clumps        String?  @db.VarChar(10) // pcc: present/notpresent
+  bacteries               String?  @db.VarChar(10) // ba: present/notpresent
+  glucose_sang            Decimal? @db.Decimal(5, 2) // bgr
+  hypertension            Boolean? // htn
+  diabete_mellitus        Boolean? // dm
+  maladie_coronaire       Boolean? // cad
+  appetit                 String?  @db.VarChar(10) // good/poor
+  oedeme_pieds            Boolean? // pe
+  anemie                  Boolean? // ane
+  
+  // =========================
+  // DONNÉES CARDIOVASCULAIRES
+  // =========================
+  cholesterol          Decimal? @db.Decimal(5, 2)
+  pression_systolique  Int? // ap_hi
+  pression_diastolique Int? // ap_lo
+  fumeur               Boolean? // smoke
+  consommation_alcool  Boolean? // alco
+  activite_physique    Boolean? // active
+  genre                Sexe? // gender
+  taille_cm            Decimal? @db.Decimal(5, 2) // height
+  poids_kg             Decimal? @db.Decimal(5, 2) // weight
+  glucose_cardio       Int? // gluc
+  
+  // Relations
+  visite Visite @relation(fields: [id_visite], references: [id_visite], onDelete: Cascade)
+  
+  @@map("donnees_cliniques_ia")
+}
+
+// =========================================================
+// TABLE IMAGES RADIOGRAPHIE (Pour Tuberculose)
+// =========================================================
+model ImageRadiographie {
+  id_image       Int      @id @default(autoincrement())
+  id_visite      Int
+  nom_fichier    String   @db.VarChar(255)
+  chemin_fichier String   @db.VarChar(500)
+  taille_fichier BigInt? // En bytes
+  type_mime      String?  @db.VarChar(50)
+  date_upload    DateTime @default(now())
+  
+  // Relations
+  visite      Visite         @relation(fields: [id_visite], references: [id_visite], onDelete: Cascade)
+  predictions PredictionIA[]
+  
+  @@index([id_visite])
+  @@map("image_radiographie")
+}
+
+// =========================================================
+// TABLE PRÉDICTION IA
+// =========================================================
+model PredictionIA {
+  id_prediction   Int            @id @default(autoincrement())
+  maladie_predite MaladiePredite
+  probabilite     Decimal        @db.Decimal(5, 4)
+  seuil_utilise   Decimal        @db.Decimal(4, 2)
+  date_prediction DateTime       @default(now())
+  id_visite       Int
+  id_image        Int? // Pour prédictions basées sur images (tuberculose uniquement)
+  
+  // Champs supplémentaires pour tuberculose
+  niveau_confiance  String? @db.VarChar(20) // Élevée, Modérée
+  interpretation    String? @db.Text
+  recommendation    String? @db.Text
+  features_detected Json? // Pour tuberculose: ["Opacités", "Cavités", etc.]
+  model_version     String? @db.VarChar(50)
+  
+  // Relations
+  visite         Visite             @relation(fields: [id_visite], references: [id_visite], onDelete: Cascade)
+  image          ImageRadiographie? @relation(fields: [id_image], references: [id_image], onDelete: SetNull)
+  explicabilites ExplicabiliteIA[]
+  validations    Validation[]
+  
+  @@index([id_visite])
+  @@index([maladie_predite])
+  @@index([date_prediction])
+  @@map("prediction_ia")
+}
+
+enum MaladiePredite {
+  DIABETE
+  MALADIE_RENALE
+  CARDIOVASCULAIRE
+  TUBERCULOSE
+}
+
+// =========================================================
+// TABLE EXPLICABILITÉ IA (SHAP / LIME)
+// =========================================================
+model ExplicabiliteIA {
+  id_explicabilite Int     @id @default(autoincrement())
+  variable         String  @db.VarChar(100)
+  contribution     Decimal @db.Decimal(6, 4)
+  id_prediction    Int
+  
+  // Relations
+  prediction PredictionIA @relation(fields: [id_prediction], references: [id_prediction], onDelete: Cascade)
+  
+  @@index([id_prediction])
+  @@index([variable])
+  @@map("explicabilite_ia")
+}
+
+// =========================================================
+// TABLE VALIDATION MÉDICALE
+// =========================================================
+model Validation {
+  id_validation     Int              @id @default(autoincrement())
+  id_prediction     Int
+  id_medecin        Int
+  validation_status StatutValidation
+  commentaire       String?          @db.Text
+  diagnostic_final  String?          @db.VarChar(100)
+  date_validation   DateTime         @default(now())
+  
+  // Relations
+  prediction PredictionIA @relation(fields: [id_prediction], references: [id_prediction], onDelete: Cascade)
+  medecin    Utilisateur  @relation(fields: [id_medecin], references: [id_utilisateur])
+  
+  @@index([id_prediction])
+  @@index([id_medecin])
+  @@map("validation")
+}
+
+enum StatutValidation {
+  VALIDE
+  REJETE
+  MODIFIE
+  EN_ATTENTE
+}
+
+// =========================================================
+// TABLE SUIVI POST-DIAGNOSTIC
+// =========================================================
+model SuiviMedical {
+  id_suivi        Int      @id @default(autoincrement())
+  traitement      String?  @db.Text
+  recommandations String?  @db.Text
+  date_suivi      DateTime @default(now())
+  id_patient      Int
+  
+  // Relations
+  patient Patient @relation(fields: [id_patient], references: [id_patient], onDelete: Cascade)
+  
+  @@index([id_patient])
+  @@map("suivi_medical")
+}
+
+// =========================================================
+// TABLE JOURNALISATION (Activity Logs)
+// =========================================================
+model ActivityLog {
+  id_log         Int      @id @default(autoincrement())
+  id_utilisateur Int?
+  action         String   @db.VarChar(100) // CREATE, UPDATE, DELETE, LOGIN, etc.
+  entity_type    String?  @db.VarChar(50) // Patient, Consultation, Prediction, etc.
+  entity_id      Int?
+  details        Json? // Détails de l'action
+  ip_address     String?  @db.VarChar(45) // IPv4 ou IPv6
+  date_creation  DateTime @default(now())
+  
+  // Relations
+  utilisateur Utilisateur? @relation(fields: [id_utilisateur], references: [id_utilisateur], onDelete: SetNull)
+  
+  @@index([id_utilisateur])
+  @@index([action])
+  @@index([entity_type])
+  @@index([date_creation])
+  @@map("activity_log")
+}
+
+// =========================================================
+// TABLE PRESCRIPTION D'EXAMENS
+// =========================================================
+model PrescriptionExamen {
+  id_prescription   Int                @id @default(autoincrement())
+  id_consultation   Int
+  id_medecin        Int
+  maladies_ciblees  String[] // Array des maladies: ["DIABETE", "MALADIE_RENALE", "CARDIOVASCULAIRE", "TUBERCULOSE"]
+  date_prescription DateTime           @default(now())
+  statut            StatutPrescription @default(EN_ATTENTE)
+  commentaire       String?            @db.Text
+
+  // Relations
+  consultation Consultation     @relation(fields: [id_consultation], references: [id_consultation], onDelete: Cascade)
+  medecin      Utilisateur      @relation(fields: [id_medecin], references: [id_utilisateur])
+  resultats    ResultatExamen[]
+
+  @@index([id_consultation])
+  @@index([id_medecin])
+  @@index([statut])
+  @@map("prescription_examen")
+}
+
+enum StatutPrescription {
+  EN_ATTENTE // Prescrit, en attente des résultats
+  EN_COURS // Résultats en cours de saisie
+  TERMINE // Résultats saisis et prédictions faites
+}
+
+// =========================================================
+// TABLE RÉSULTATS D'EXAMENS (Saisis par l'infirmier)
+// =========================================================
+model ResultatExamen {
+  id_resultat     Int      @id @default(autoincrement())
+  id_prescription Int
+  id_visite       Int? // Visite créée pour ces résultats
+  id_infirmier    Int? // Infirmier qui a saisi les données
+  date_saisie     DateTime @default(now())
+
+  // Données cliniques (même structure que DonneesCliniquesIA)
+  // Diabète
+  nombre_grossesses         Int?
+  taux_glucose              Decimal? @db.Decimal(5, 2)
+  pression_arterielle       Decimal? @db.Decimal(5, 2)
+  epaisseur_pli_cutane      Decimal? @db.Decimal(5, 2)
+  taux_insuline             Decimal? @db.Decimal(5, 2)
+  imc                       Decimal? @db.Decimal(5, 2)
+  fonction_pedigree_diabete Decimal? @db.Decimal(5, 3)
+  age                       Int?
+
+  // Maladie rénale
+  uree_sanguine           Decimal? @db.Decimal(5, 2)
+  creatinine_serique      Decimal? @db.Decimal(5, 2)
+  sodium                  Decimal? @db.Decimal(5, 2)
+  potassium               Decimal? @db.Decimal(5, 2)
+  hemoglobine             Decimal? @db.Decimal(5, 2)
+  volume_cellulaire_packe Decimal? @db.Decimal(5, 2)
+  globules_blancs         Decimal? @db.Decimal(10, 2)
+  globules_rouges         Decimal? @db.Decimal(10, 2)
+  gravite_specifique      Decimal? @db.Decimal(4, 3)
+  albumine                Int?
+  sucre                   Decimal? @db.Decimal(4, 2)
+  globules_rouges_urine   String?  @db.VarChar(10)
+  pus_cells               String?  @db.VarChar(10)
+  pus_cells_clumps        String?  @db.VarChar(10)
+  bacteries               String?  @db.VarChar(10)
+  glucose_sang            Decimal? @db.Decimal(5, 2)
+  hypertension            Boolean?
+  diabete_mellitus        Boolean?
+  maladie_coronaire       Boolean?
+  appetit                 String?  @db.VarChar(10)
+  oedeme_pieds            Boolean?
+  anemie                  Boolean?
+
+  // Cardiovasculaire
+  cholesterol          Decimal? @db.Decimal(5, 2)
+  pression_systolique  Int?
+  pression_diastolique Int?
+  fumeur               Boolean?
+  consommation_alcool  Boolean?
+  activite_physique    Boolean?
+  genre                Sexe?
+  taille_cm            Decimal? @db.Decimal(5, 2)
+  poids_kg             Decimal? @db.Decimal(5, 2)
+  glucose_cardio       Int?
+
+  // Relations
+  prescription PrescriptionExamen    @relation(fields: [id_prescription], references: [id_prescription], onDelete: Cascade)
+  visite       Visite?               @relation(fields: [id_visite], references: [id_visite], onDelete: SetNull)
+  infirmier    Utilisateur?          @relation(fields: [id_infirmier], references: [id_utilisateur], onDelete: SetNull)
+  photos       PhotoDocumentExamen[]
+
+  @@index([id_prescription])
+  @@index([id_visite])
+  @@map("resultat_examen")
+}
+
+// =========================================================
+// TABLE PHOTOS DE DOCUMENTS D'EXAMENS
+// =========================================================
+model PhotoDocumentExamen {
+  id_photo       Int      @id @default(autoincrement())
+  id_resultat    Int
+  nom_fichier    String   @db.VarChar(255)
+  chemin_fichier String   @db.VarChar(500)
+  taille_fichier BigInt? // En bytes
+  type_mime      String?  @db.VarChar(50)
+  date_upload    DateTime @default(now())
+  description    String?  @db.Text // Description de ce que montre la photo
+
+  // Relations
+  resultat ResultatExamen @relation(fields: [id_resultat], references: [id_resultat], onDelete: Cascade)
+
+  @@index([id_resultat])
+  @@map("photo_document_examen")
+}

@@ -1,0 +1,20 @@
+# Configuration Nixpacks pour Railway
+# Installe Python et les dépendances nécessaires pour les modèles ML
+
+[phases.setup]
+nixPkgs = ["nodejs-18_x", "python39", "gcc"]
+
+[phases.install]
+cmds = [
+  "npm install",
+  "pip3 install xgboost numpy pandas scikit-learn joblib",
+  "npx prisma generate"
+]
+
+[phases.build]
+cmds = [
+  "npm run build"
+]
+
+[start]
+cmd = "npm start"
