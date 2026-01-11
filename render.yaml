@@ -11,7 +11,7 @@ services:
       npm install &&
       npx prisma generate &&
       npm run build &&
-      pip3 install --user xgboost numpy pandas scikit-learn joblib
+      python3 -m pip install --user xgboost numpy pandas scikit-learn joblib
     startCommand: npm start
     envVars:
       - key: NODE_ENV

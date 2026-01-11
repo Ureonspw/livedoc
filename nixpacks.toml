@@ -7,7 +7,8 @@ nixPkgs = ["nodejs-18_x", "python39", "gcc"]
 [phases.install]
 cmds = [
   "npm install",
-  "pip3 install xgboost numpy pandas scikit-learn joblib",
+  "python3 -m pip install --upgrade pip",
+  "python3 -m pip install xgboost numpy pandas scikit-learn joblib",
   "npx prisma generate"
 ]
 
