@@ -427,6 +427,7 @@ export default function DashboardPage() {
     { id: "patients", label: "Patients", icon: FiUsers, badge: null },
     { id: "consultations", label: "Consultations", icon: FiFileText, badge: stats.predictionsEnAttente > 0 ? stats.predictionsEnAttente.toString() : null },
     { id: "examens", label: "Examens", icon: FiFileText, badge: allExams.filter((e: any) => e.statut === 'EN_COURS' || e.statut === 'EN_ATTENTE').length > 0 ? allExams.filter((e: any) => e.statut === 'EN_COURS' || e.statut === 'EN_ATTENTE').length.toString() : null },
+    { id: "suivi-medical", label: "Suivi Médical", icon: FiTrendingUp, badge: null, link: "/suivi-medical" },
     { id: "settings", label: "Paramètres", icon: FiSettings, badge: null },
   ];
 
@@ -3440,13 +3441,20 @@ export default function DashboardPage() {
             <ul className={Classes.navMenu}>
               {navItems.map((item) => {
                 const Icon = item.icon;
+                const hasLink = (item as any).link;
                 return (
                   <li 
                     key={item.id}
                     className={`${Classes.navItem} ${activeNav === item.id ? Classes.active : ''}`}
-                    onClick={() => setActiveNav(item.id)}
+                    onClick={() => {
+                      if (hasLink) {
+                        router.push((item as any).link);
+                      } else {
+                        setActiveNav(item.id);
+                      }
+                    }}
                   >
-                    <a href="#">
+                    <a href={hasLink ? (item as any).link : "#"}>
                       <Icon className={Classes.navIcon} />
                       <span>{item.label}</span>
                       {item.badge && <span className={Classes.badge}>{item.badge}</span>}
@@ -4215,7 +4223,12 @@ export default function DashboardPage() {
                                                     }),
                                                   });
                                                   if (response.ok) {
-                                                    alert('Validation enregistrée avec succès !');
+                                                    const data = await response.json();
+                                                    if (data.suiviCree) {
+                                                      alert('Validation enregistrée avec succès !\n\n✅ Un suivi médical a été créé automatiquement pour ce patient.\nVous pouvez le consulter dans "Suivi Médical".');
+                                                    } else {
+                                                      alert('Validation enregistrée avec succès !');
+                                                    }
                                                     setValidationForm({ validation_status: 'VALIDE', commentaire: '', diagnostic_final: '' });
                                                     loadConsultations();
                                                     loadPrescriptions(selectedConsultation.id_consultation);
@@ -4259,9 +4272,70 @@ export default function DashboardPage() {
                                                 <strong>Commentaire:</strong> {lastValidation.commentaire}
                 </div>
                                             )}
-                                            <div style={{ fontSize: '11px', color: '#9ca3af' }}>
+                                            <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '8px' }}>
                                               Validé le {new Date(lastValidation.date_validation).toLocaleDateString('fr-FR')}
               </div>
+                                            {lastValidation.validation_status === 'VALIDE' && (
+                                              <button
+                                                onClick={async () => {
+                                                  if (!user || !prediction) return;
+                                                  try {
+                                                    // Vérifier si un suivi existe déjà
+                                                    const checkResponse = await fetch(`/api/suivi-medical/check?id_prediction=${prediction.id_prediction}`);
+                                                    if (checkResponse.ok) {
+                                                      const checkData = await checkResponse.json();
+                                                      if (checkData.hasSuivi) {
+                                                        if (confirm('Un suivi médical existe déjà pour ce patient. Voulez-vous le consulter ?')) {
+                                                          router.push(`/suivi-medical/${checkData.suivi.id_suivi}`);
+                                                        }
+                                                      } else {
+                                                        // Créer le suivi
+                                                        const patient = checkData.patient;
+                                                        const createResponse = await fetch('/api/suivi-medical', {
+                                                          method: 'POST',
+                                                          headers: { 'Content-Type': 'application/json' },
+                                                          body: JSON.stringify({
+                                                            id_patient: patient.id_patient,
+                                                            id_medecin: user.id_utilisateur,
+                                                            id_prediction_initiale: prediction.id_prediction,
+                                                            maladie_predite: checkData.maladie_predite,
+                                                            traitement: lastValidation.commentaire || null,
+                                                            recommandations: lastValidation.diagnostic_final || null,
+                                                          }),
+                                                        });
+                                                        if (createResponse.ok) {
+                                                          const createData = await createResponse.json();
+                                                          alert('Suivi médical créé avec succès !');
+                                                          router.push(`/suivi-medical/${createData.suivi.id_suivi}`);
+                                                        } else {
+                                                          const error = await createResponse.json();
+                                                          alert(error.error || 'Erreur lors de la création du suivi');
+                                                        }
+                                                      }
+                                                    }
+                                                  } catch (error) {
+                                                    console.error('Erreur:', error);
+                                                    alert('Erreur lors de la création du suivi');
+                                                  }
+                                                }}
+                                                style={{
+                                                  padding: '6px 12px',
+                                                  background: '#10b981',
+                                                  color: 'white',
+                                                  border: 'none',
+                                                  borderRadius: '6px',
+                                                  cursor: 'pointer',
+                                                  fontSize: '12px',
+                                                  fontWeight: '500',
+                                                  display: 'flex',
+                                                  alignItems: 'center',
+                                                  gap: '6px',
+                                                }}
+                                              >
+                                                <FiTrendingUp size={14} />
+                                                Créer un suivi médical
+                                              </button>
+                                            )}
             </div>
                                         )}
           </div>

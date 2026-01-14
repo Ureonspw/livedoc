@@ -24,11 +24,13 @@ model Utilisateur {
   date_creation  DateTime @default(now())
   
   // Relations
-  consultations   Consultation[]
-  validations     Validation[]
-  activityLogs    ActivityLog[]
-  prescriptions   PrescriptionExamen[]
-  resultatsExamen ResultatExamen[]
+  consultations         Consultation[]
+  validations           Validation[]
+  activityLogs          ActivityLog[]
+  prescriptions         PrescriptionExamen[]
+  resultatsExamen       ResultatExamen[]
+  suivis_medicaux       SuiviMedical[]
+  examens_suivi_programmes ExamenSuiviProgramme[]
   
   @@map("utilisateur")
 }
@@ -108,10 +110,11 @@ model Consultation {
   observation       String?  @db.Text
   
   // Relations
-  patient       Patient              @relation(fields: [id_patient], references: [id_patient], onDelete: Cascade)
-  medecin       Utilisateur          @relation(fields: [id_medecin], references: [id_utilisateur])
-  visites       Visite[]
-  prescriptions PrescriptionExamen[]
+  patient              Patient              @relation(fields: [id_patient], references: [id_patient], onDelete: Cascade)
+  medecin              Utilisateur          @relation(fields: [id_medecin], references: [id_utilisateur])
+  visites              Visite[]
+  prescriptions        PrescriptionExamen[]
+  consultations_suivi  ConsultationSuivi[]
   
   @@index([id_patient])
   @@index([id_medecin])
@@ -133,6 +136,7 @@ model Visite {
   predictions       PredictionIA[]
   images            ImageRadiographie[]
   resultatsExamen   ResultatExamen[]
+  examens_suivi     ExamenSuiviProgramme[]
   
   @@index([id_consultation])
   @@map("visite")
@@ -261,10 +265,11 @@ model PredictionIA {
   model_version     String? @db.VarChar(50)
   
   // Relations
-  visite         Visite             @relation(fields: [id_visite], references: [id_visite], onDelete: Cascade)
-  image          ImageRadiographie? @relation(fields: [id_image], references: [id_image], onDelete: SetNull)
-  explicabilites ExplicabiliteIA[]
-  validations    Validation[]
+  visite                Visite             @relation(fields: [id_visite], references: [id_visite], onDelete: Cascade)
+  image                 ImageRadiographie? @relation(fields: [id_image], references: [id_image], onDelete: SetNull)
+  explicabilites        ExplicabiliteIA[]
+  validations           Validation[]
+  suivis_medicaux_initiaux SuiviMedical[] @relation("PredictionInitiale")
   
   @@index([id_visite])
   @@index([maladie_predite])
@@ -328,17 +333,98 @@ enum StatutValidation {
 // TABLE SUIVI POST-DIAGNOSTIC
 // =========================================================
 model SuiviMedical {
-  id_suivi        Int      @id @default(autoincrement())
-  traitement      String?  @db.Text
-  recommandations String?  @db.Text
-  date_suivi      DateTime @default(now())
-  id_patient      Int
+  id_suivi              Int            @id @default(autoincrement())
+  id_patient            Int
+  id_medecin            Int
+  id_prediction_initiale Int? // Prédiction initiale qui a déclenché le suivi
+  maladie_predite       MaladiePredite // Maladie chronique diagnostiquée
+  statut_suivi          StatutSuivi   @default(EN_COURS)
+  date_debut_suivi      DateTime       @default(now())
+  date_prochain_examen  DateTime? // Date du prochain examen programmé
+  traitement            String?        @db.Text
+  recommandations       String?        @db.Text
+  notes_evolution       String?        @db.Text // Notes sur l'évolution
+  date_derniere_consultation DateTime? // Dernière consultation de suivi
+  date_guerison          DateTime? // Date de guérison si applicable
   
   // Relations
-  patient Patient @relation(fields: [id_patient], references: [id_patient], onDelete: Cascade)
+  patient              Patient              @relation(fields: [id_patient], references: [id_patient], onDelete: Cascade)
+  medecin              Utilisateur          @relation(fields: [id_medecin], references: [id_utilisateur])
+  prediction_initiale  PredictionIA?        @relation("PredictionInitiale", fields: [id_prediction_initiale], references: [id_prediction], onDelete: SetNull)
+  examens_programmes    ExamenSuiviProgramme[]
+  consultations_suivi   ConsultationSuivi[]
   
   @@index([id_patient])
+  @@index([id_medecin])
+  @@index([maladie_predite])
+  @@index([statut_suivi])
+  @@index([date_prochain_examen])
   @@map("suivi_medical")
+}
+
+enum StatutSuivi {
+  EN_COURS      // Suivi en cours
+  AMELIORATION  // État s'améliore
+  STABLE        // État stable
+  DETERIORATION // État se détériore
+  GUERI         // Patient guéri
+  ARRETE        // Suivi arrêté
+}
+
+// =========================================================
+// TABLE EXAMEN DE SUIVI PROGRAMMÉ
+// =========================================================
+model ExamenSuiviProgramme {
+  id_examen_suivi    Int                @id @default(autoincrement())
+  id_suivi           Int
+  id_medecin         Int
+  date_examen        DateTime           // Date programmée pour l'examen
+  type_examen        String             @db.VarChar(100) // "DIABETE", "MALADIE_RENALE", etc.
+  raison             String?            @db.Text // Raison de l'examen
+  statut             StatutExamenSuivi @default(PROGRAMME)
+  date_realisation   DateTime? // Date de réalisation effective
+  id_visite          Int? // Visite créée pour cet examen
+  notes              String?            @db.Text
+  
+  // Relations
+  suivi   SuiviMedical @relation(fields: [id_suivi], references: [id_suivi], onDelete: Cascade)
+  medecin Utilisateur  @relation(fields: [id_medecin], references: [id_utilisateur])
+  visite  Visite?      @relation(fields: [id_visite], references: [id_visite], onDelete: SetNull)
+  
+  @@index([id_suivi])
+  @@index([id_medecin])
+  @@index([date_examen])
+  @@index([statut])
+  @@map("examen_suivi_programme")
+}
+
+enum StatutExamenSuivi {
+  PROGRAMME    // Examen programmé
+  REALISE      // Examen réalisé
+  ANNULE       // Examen annulé
+  REPORTE      // Examen reporté
+}
+
+// =========================================================
+// TABLE CONSULTATION DE SUIVI
+// =========================================================
+model ConsultationSuivi {
+  id_consultation_suivi Int      @id @default(autoincrement())
+  id_suivi              Int
+  id_consultation       Int      // Consultation liée
+  date_consultation      DateTime @default(now())
+  evolution             String?  @db.Text // Notes sur l'évolution
+  symptomes             String?  @db.Text
+  traitement_actuel     String?  @db.Text
+  prochaines_etapes     String?  @db.Text
+  
+  // Relations
+  suivi        SuiviMedical @relation(fields: [id_suivi], references: [id_suivi], onDelete: Cascade)
+  consultation Consultation @relation(fields: [id_consultation], references: [id_consultation], onDelete: Cascade)
+  
+  @@index([id_suivi])
+  @@index([id_consultation])
+  @@map("consultation_suivi")
 }
 
 // =========================================================

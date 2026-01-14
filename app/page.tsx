@@ -115,7 +115,7 @@ export default function Home() {
                 <div className={Classes.statLabel}>Temps de pré-diagnostic</div>
               </div>
               <div className={Classes.statItem}>
-                <div className={Classes.statNumber}>95%+</div>
+                <div className={Classes.statNumber}>90%+</div>
                 <div className={Classes.statLabel}>Fiabilité des prédictions</div>
               </div>
               <div className={Classes.statItem}>
